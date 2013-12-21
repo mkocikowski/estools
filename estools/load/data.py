@@ -76,6 +76,5 @@ def _feeds(URIs):
                     yield f
                 logger.debug("exhausted: %s", path)
             except IOError as exc:
-                logger.debug(exc)
-                raise
+                logger.warning(exc)
 
