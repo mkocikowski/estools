@@ -1,3 +1,9 @@
+Overview
+--------
+Set of command line tools for getting data in and out of Elasticsearch.
+Currently, there are 2 tools: esload (load data into es) and esdump (dump data
+out of es). Connect the two with a pipe and profit. 
+
 Installation
 ------------
 
