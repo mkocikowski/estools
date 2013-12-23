@@ -7,7 +7,7 @@ import logging
 import sys
 import itertools
 
-import requests
+# import requests
 
 import estools.common.api
 import estools.common.log

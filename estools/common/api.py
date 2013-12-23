@@ -83,20 +83,12 @@ def create_index(session=None, host='127.0.0.1', port=9200, index=None):
     return response, curl
 
 @request
-def put_mapping(session=None, host='127.0.0.1', port=9200, index=None, doctype=None, idpath=None):
+def put_mapping(session=None, host='127.0.0.1', port=9200, index=None, doctype=None, mapping=None):
 
     verb = "PUT"
     url = "http://%(host)s:%(port)i/%(index)s/%(doctype)s/_mapping" % locals()
-    data = {
-        doctype: {
-            "_id": {"path": idpath},
-            "_size": {"enabled": True, "store": "yes"},
-        },
-    }
-    data = json.dumps(data)
-    curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s -d '%(data)s'" % locals()
-    print(curl)
-    response = session.put(url, data=data, stream=False)
+    curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s -d '%(mapping)s'" % locals()
+    response = session.put(url, data=mapping, stream=False)
     return response, curl
 
 

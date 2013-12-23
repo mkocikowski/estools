@@ -6,6 +6,7 @@ import argparse
 import logging
 import sys
 import itertools
+import json
 
 import requests
 
@@ -32,6 +33,16 @@ def args_parser():
     return parser
 
 
+def _mapping(doctype=None, idpath=None):
+    mapping = {
+        doctype: {
+            "_id": {"path": idpath},
+            "_size": {"enabled": True, "store": "yes"},
+        },
+    }
+    return json.dumps(mapping)
+
+
 def main():
 
     estools.common.log.set_up_logging(level=logging.INFO)
@@ -41,12 +52,30 @@ def main():
     if args.wipe:
         response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
 
-    response = estools.common.api.create_index(session=session, host=args.host, port=args.port, index=args.index)
-    response = estools.common.api.put_mapping(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, idpath=args.idpath)
+    response = estools.common.api.create_index(
+                    session=session,
+                    host=args.host,
+                    port=args.port,
+                    index=args.index,
+    )
+    response = estools.common.api.put_mapping(
+                    session=session,
+                    host=args.host,
+                    port=args.port,
+                    index=args.index,
+                    doctype=args.doctype,
+                    mapping=_mapping(
+                        doctype=args.doctype,
+                        idpath=args.idpath,
+                    ),
+    )
+
     # this is needed because until a new index is opened it is no allocated,
     # and until it is allocated the settings cannot be updated, so in effect
     # it needs to be opened, closed, updated, and opened
     response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
+
+    # closes the index, updates the settings, reopens the index
     estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
 
     format_f = estools.load.data.format
