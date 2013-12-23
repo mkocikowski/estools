@@ -10,7 +10,7 @@ ld = """Elasticsearch data handling tools.
 
 setup(
     name = 'estools',
-    version = '0.0.1',
+    version = '0.0.2',
     author = 'Mik Kocikowski',
     author_email = 'mkocikowski@gmail.com',
     url = 'https://github.com/mkocikowski/estools',
@@ -21,6 +21,7 @@ setup(
         'estools',
         'estools.test',
         'estools.load',
+        'estools.dump',
     ],
     package_data = {
         '': ['README.md'],
@@ -28,6 +29,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'esload = estools.load.client:main',
+            'esdump = estools.dump.client:main',
         ]
     },
     classifiers = [

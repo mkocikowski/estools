@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 # (c)2013 Mik Kocikowski, MIT License (http://opensource.org/licenses/MIT)
-# https://github.com/mkocikowski/esbench
+# https://github.com/mkocikowski/estools
 
 import argparse
 import logging
@@ -9,18 +9,11 @@ import itertools
 
 import requests
 
-import estools.load.api
+import estools.common.api
+import estools.common.log
 import estools.load.data
 
 logger = logging.getLogger(__name__)
-
-
-class LogFormatter(logging.Formatter):
-    """http://stackoverflow.com/a/7004565/469997"""
-    def format(self, record):
-        if hasattr(record, 'funcNameOverride'):
-            record.funcName = record.funcNameOverride
-        return super(LogFormatter, self).format(record)
 
 
 def args_parser():
@@ -41,29 +34,25 @@ def args_parser():
 
 def main():
 
-    format = format='%(levelname)s %(name)s.%(funcName)s:%(lineno)s %(message)s'
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger().handlers[0].setFormatter(LogFormatter(format))
-
+    estools.common.log.set_up_logging(level=logging.INFO)
     args = args_parser().parse_args()
-
     session = requests.Session()
 
     if args.wipe:
-        response = estools.load.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
+        response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
 
-    response = estools.load.api.create_index(session=session, host=args.host, port=args.port, index=args.index)
-    response = estools.load.api.put_mapping(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, idpath=args.idpath)
+    response = estools.common.api.create_index(session=session, host=args.host, port=args.port, index=args.index)
+    response = estools.common.api.put_mapping(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, idpath=args.idpath)
     # this is needed because until a new index is opened it is no allocated,
     # and until it is allocated the settings cannot be updated, so in effect
     # it needs to be opened, closed, updated, and opened
-    response = estools.load.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
-    estools.load.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
+    response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
+    estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
 
     format_f = estools.load.data.format
     documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode))
     for n, doc in enumerate((d for d in documents if d)):
-        response = estools.load.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+        response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
 
 
 if __name__ == "__main__":

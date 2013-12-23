@@ -9,6 +9,7 @@ Installation
 
     pip install https://github.com/mkocikowski/estools/archive/dev.zip
     esload --help
+    esdump --help
 
 Install and run  Elasticsearch
 ------------------------------
