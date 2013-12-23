@@ -5,9 +5,9 @@
 import argparse
 import logging
 import sys
-import itertools
+import json
 
-# import requests
+import requests
 
 import estools.common.api
 import estools.common.log
@@ -21,7 +21,9 @@ def args_parser():
     parser = argparse.ArgumentParser(description="Elasticsearch data dumper (%s)" % (estools.__version__, ), epilog="")
     parser.add_argument('--host', type=str, action='store', default='localhost', help="es host; (%(default)s)")
     parser.add_argument('--port', type=int, action='store', default=9200, help="es port; (%(default)s)")
-    parser.add_argument('indexes', type=str, nargs="+", action='store', help='names of the source ES indexes')
+    parser.add_argument('--raw', action='store_true', help="if set, don't include _original data; (%(default)s)")
+    parser.add_argument('--doctype', action='store', type=str, default='doc', help="doctype (follows index name in es path); (%(default)s)")
+    parser.add_argument('index', type=str, action='store', help='name of the source ES index')
 
     return parser
 
@@ -32,21 +34,19 @@ def main():
     args = args_parser().parse_args()
     session = requests.Session()
 
-#     if args.wipe:
-#         response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
-#
-#     response = estools.common.api.create_index(session=session, host=args.host, port=args.port, index=args.index)
-#     response = estools.common.api.put_mapping(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, idpath=args.idpath)
-#     # this is needed because until a new index is opened it is no allocated,
-#     # and until it is allocated the settings cannot be updated, so in effect
-#     # it needs to be opened, closed, updated, and opened
-#     response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
-#     estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
-#
-#     format_f = estools.load.data.format
-#     documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode))
-#     for n, doc in enumerate((d for d in documents if d)):
-#         response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+    hits = estools.common.api.scan_iterator(
+                session=session,
+                host=args.host,
+                port=args.port,
+                index=args.index,
+                doctype=args.doctype,
+                query='{"query": {"match_all": {}}}',
+                raw=args.raw,
+    )
+
+    for hit in hits:
+        print(json.dumps(hit))
+
 
 
 if __name__ == "__main__":

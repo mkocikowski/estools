@@ -16,8 +16,8 @@ class LogFormatter(logging.Formatter):
 
 
 def set_up_logging(level=logging.INFO):
-    format = format='%(levelname)s %(name)s.%(funcName)s:%(lineno)s %(message)s'
+    fmt = '%(levelname)s %(name)s.%(funcName)s:%(lineno)s %(message)s'
     logging.basicConfig(level=level)
-    logging.getLogger().handlers[0].setFormatter(LogFormatter(format))
+    logging.getLogger().handlers[0].setFormatter(LogFormatter(fmt))
     logger.debug("set up logging")
 
