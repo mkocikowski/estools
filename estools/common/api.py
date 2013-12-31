@@ -23,7 +23,7 @@ def request(fn):
         response, curl = fn(*args, **kwargs)
         api_r = ApiResponse(response.status_code, response.reason, response.text, curl)
         if api_r.status < 300:
-            logger.info(
+            logger.debug(
                 json.dumps({
                     'status': api_r.status,
                     'reason': api_r.reason,

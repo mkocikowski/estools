@@ -44,8 +44,12 @@ def main():
                 raw=args.raw,
     )
 
-    for hit in hits:
-        print(json.dumps(hit))
+    try:
+        for hit in hits:
+            print(json.dumps(hit))
+
+    except IOError as exc:
+        logger.debug(exc)
 
 
 
