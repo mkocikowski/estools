@@ -22,11 +22,46 @@ class RaxTest(unittest.TestCase):
         estools.rax.client.set_credentials()
 
 
-    def test_get_containers(self):
-        for connection in estools.rax.client.get_connections():
+    def test_list_files(self):
+        for region, connection in estools.rax.client.get_connections().items():
             for container in estools.rax.client.get_containers(connection):
-                for fn in estools.rax.client.get_files(container):
-                    print((connection.connection.os_options['region_name'], container, fn))
+                for object in estools.rax.client.get_objects(container):
+                    print((estools.rax.client.to_path(connection, container, object)))
+
+
+    def test_get_connections(self):
+        self.assertEqual(['IAD', 'DFW'], estools.rax.client.get_connections().keys())
+
+
+#     def test_get_object(self):
+#         with estools.rax.client.fetch_object('IAD', 'foo', 'sample_small.json') as (meta, chunks):
+# #             for chunk in chunks:
+# #                 print((meta, chunk))
+# #                 print("-------")
+#             i = estools.rax.client.x(chunks)
+#             for x in i:
+#                 print(x)
+
+    def test_get_lines(self):
+        for line in estools.rax.client.get_lines(path='IAD/foo/sample_small.json'):
+            print(line)
+
+
+class RaxUtilTest(unittest.TestCase):
+
+    def test_from_path(self):
+
+        self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("cf://dfw/foo/bar/baz.json"))
+        self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("cf://DFW/foo/bar/baz.json"))
+
+
+    def test_chunks_to_lines(self):
+
+        chunks = ['foo\nb', '', 'ar\nbaz\n\n']
+        lines = estools.rax.client.chunks_to_lines(chunks)
+        self.assertEqual(['foo', 'bar', 'baz'], list(lines))
+
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
