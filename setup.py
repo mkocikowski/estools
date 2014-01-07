@@ -10,18 +10,23 @@ ld = """Elasticsearch data handling tools.
 
 setup(
     name = 'estools',
-    version = '0.0.2',
+    version = '0.0.3',
     author = 'Mik Kocikowski',
     author_email = 'mkocikowski@gmail.com',
     url = 'https://github.com/mkocikowski/estools',
     description = 'Elasticsearch data tools',
     long_description = ld,
-    install_requires = ['requests >= 2.1.0', ],
+    install_requires = [
+        'requests >= 2.1.0',
+        'pyrax >= 1.6.2',
+    ],
     packages = [
         'estools',
         'estools.test',
         'estools.load',
         'estools.dump',
+        'estools.rax',
+        'estools.common',
     ],
     package_data = {
         '': ['README.md'],
