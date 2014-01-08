@@ -30,13 +30,36 @@ following line:
 Load data into Elasticsearch
 ----------------------------
 
-You have a file 'data.json' which has 1 document per line, and you want to
-load it into the 'foo' index on the local ES node:
+You have a file 'data1.json' which has 1 document per line, and you want to
+load it into the 'my_index' index on the local ES node:
 
-    esload my_index data.json
+    esload my_index data1.json
 
-You will see a bunch of output, listing document ids, which look something
-like this: "wYPyMUWFRiuP0ffzNawRLA". To access an indexed document: 
+If you have data in file 'data2.json' in Cloudfiles container 'foo' in
+Rackspace region 'DFW', then you can load this data with: 
+
+    esload my_index cf://DFW/foo/data2.json
+
+You can combine data from multiple sources by listing multiple URIs: 
+
+    esload my_index data1.json cf://DFW/foo/data2.json
+
+Copying data from one Elasticsearch index to another
+----------------------------------------------------
+You can dump data from an ES index with the 'esdump' command. You can then
+pipe that data into 'esload': 
+
+    esdump source_index | esload target_index
+
+Run 'esdump -h' and 'esload -h' for information on how to connect to remote
+hosts - this is how you can copy data between machines.
+
+View data is Elasticsearch
+--------------------------
+
+As you are loading the data, you will see a bunch of output, listing document
+ids, which look something like this: "wYPyMUWFRiuP0ffzNawRLA". To access an
+indexed document: 
 
     curl localhost:9200/my_index/doc/wYPyMUWFRiuP0ffzNawRLA
 
