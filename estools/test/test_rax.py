@@ -53,6 +53,10 @@ class RaxUtilTest(unittest.TestCase):
 
         self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("cf://dfw/foo/bar/baz.json"))
         self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("cf://DFW/foo/bar/baz.json"))
+        self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("DFW/foo/bar/baz.json"))
+        self.assertEqual(('DFW', 'foo', 'bar/baz.json'), estools.rax.client.from_path("/DFW/foo/bar/baz.json"))
+
+        self.assertEqual(('DFW', 'foo', 'bar//baz.json'), estools.rax.client.from_path("/DFW/foo/bar//baz.json"))
 
 
     def test_chunks_to_lines(self):

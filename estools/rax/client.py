@@ -13,6 +13,8 @@ import itertools
 
 import pyrax
 
+# DOCS:
+# https://github.com/rackspace/pyrax/blob/master/docs/cloud_files.md
 
 
 # alternately, you can have a file ~/.pyrax.cfg:
@@ -29,18 +31,18 @@ pyrax.set_setting("identity_type", "rackspace")
 # pyrax.set_setting("region", RS_REGIONs[0])
 pyrax.set_http_debug(False)
 
-
 import estools.common.api
 import estools.common.log
 import estools.load.data
 
 logger = logging.getLogger(__name__)
+logging.getLogger('swiftclient').setLevel(logging.WARNING)
 
 
 def args_parser():
 
     parser = argparse.ArgumentParser(description="Rackspace cloudfiles client (%s)" % (estools.__version__, ), epilog="")
-    parser.add_argument('path', type=str, action='store', help='REGION/container/filename')
+    parser.add_argument('path', type=str, nargs='?', action='store', help='REGION/container/filename')
 
     return parser
 
@@ -80,7 +82,7 @@ def to_path(connection=None, container=None, object=None):
 
 def from_path(path=None):
     try:
-        s = re.search(r"(?:.*://)?(.*$)", path).group(1).split("/")
+        s = re.search(r"(?:.*://)?(?:/)?(.*$)", path).group(1).split("/")
         return (s[0].upper(), s[1], "/".join(s[2:]))
     except (IndexError, ) as exc:
         logger.warning(exc)
@@ -138,8 +140,17 @@ def main():
 
     set_credentials()
     try:
-        for line in get_lines(args.path):
-            print(line)
+
+        if args.path:
+            for line in get_lines(args.path):
+                print(line)
+
+        else:
+            for region, connection in get_connections().items():
+                for container in get_containers(connection):
+                    for object in get_objects(container):
+                        print("cf://%s" % to_path(connection, container, object))
+
 
     except IOError as exc:
         logger.debug(exc)

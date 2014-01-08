@@ -27,7 +27,7 @@ def args_parser():
     parser.add_argument('--strict', action='store_true', help="if set, barf on malformed json; (%(default)s)")
     parser.add_argument('--idpath', action='store', type=str, default='id', help="name of the source field containing docment ids (%(default)s)")
     parser.add_argument('--doctype', action='store', type=str, default='doc', help="doctype (follows index name in es path); (%(default)s)")
-    parser.add_argument('index', type=str, action='store', help='name of the target ES index')
+    parser.add_argument('index', type=str, action='store', help='name of the target ES index. Use magic value "-" to dump data to stdout, without touching Elasticsearch. ')
     parser.add_argument('uris', metavar='URIs', nargs="*", type=str, action='store', default=['/dev/stdin'], help="read data from URI(s); (%(default)s)")
 
     return parser
@@ -45,43 +45,54 @@ def _mapping(doctype=None, idpath=None):
 
 def main():
 
-    estools.common.log.set_up_logging(level=logging.INFO)
+    estools.common.log.set_up_logging(level=logging.DEBUG)
     args = args_parser().parse_args()
     session = requests.Session()
 
-    if args.wipe:
-        response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
+    if args.index != '-':
 
-    response = estools.common.api.create_index(
-                    session=session,
-                    host=args.host,
-                    port=args.port,
-                    index=args.index,
-    )
-    response = estools.common.api.put_mapping(
-                    session=session,
-                    host=args.host,
-                    port=args.port,
-                    index=args.index,
-                    doctype=args.doctype,
-                    mapping=_mapping(
+        if args.wipe:
+            response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
+
+        response = estools.common.api.create_index(
+                        session=session,
+                        host=args.host,
+                        port=args.port,
+                        index=args.index,
+        )
+        response = estools.common.api.put_mapping(
+                        session=session,
+                        host=args.host,
+                        port=args.port,
+                        index=args.index,
                         doctype=args.doctype,
-                        idpath=args.idpath,
-                    ),
-    )
+                        mapping=_mapping(
+                            doctype=args.doctype,
+                            idpath=args.idpath,
+                        ),
+        )
 
-    # this is needed because until a new index is opened it is no allocated,
-    # and until it is allocated the settings cannot be updated, so in effect
-    # it needs to be opened, closed, updated, and opened
-    response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
+        # this is needed because until a new index is opened it is no allocated,
+        # and until it is allocated the settings cannot be updated, so in effect
+        # it needs to be opened, closed, updated, and opened
+        response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
 
-    # closes the index, updates the settings, reopens the index
-    estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
+        # closes the index, updates the settings, reopens the index
+        estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
+
 
     format_f = estools.load.data.format
     documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode))
-    for n, doc in enumerate((d for d in documents if d)):
-        response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+    try:
+        for n, doc in enumerate((d for d in documents if d)):
+            if args.index != '-':
+                response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+            else:
+                print(doc)
+
+    except (IOError,) as exc:
+        logger.debug(exc)
+
 
 
 if __name__ == "__main__":

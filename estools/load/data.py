@@ -18,7 +18,7 @@ import collections
 import itertools
 import json
 
-
+import estools.rax.client
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +62,16 @@ def _feeds(URIs):
             yield sys.stdin
             logger.debug("exhausted: stdin")
 
-        elif uri.startswith('http'):
+        elif uri.startswith('http://'):
             # TODO: read from the net
             logger.debug("skipping remote file: %s", uri)
             pass
+
+        elif uri.startswith('cf://'):
+            logger.debug("reading from: %s", uri)
+            estools.rax.client.set_credentials()
+            yield estools.rax.client.get_lines(path=uri)
+            logger.debug("exhausted: %s", uri)
 
         else:
             try:
