@@ -44,8 +44,8 @@ You can combine data from multiple sources by listing multiple URIs:
 
     esload my_index data1.json cf://DFW/foo/data2.json
 
-Copying data from one Elasticsearch index to another
-----------------------------------------------------
+Copying data
+------------
 You can dump data from an ES index with the 'esdump' command. You can then
 pipe that data into 'esload': 
 
