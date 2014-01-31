@@ -9,6 +9,7 @@ import unittest
 import json
 import logging
 import collections
+import StringIO
 
 import estools.load.data
 
@@ -20,8 +21,8 @@ class LoadDataTest(unittest.TestCase):
         try:
 
             tmp = estools.load.data.sys.stdin
-            estools.load.data.sys.stdin = ['foo', 'bar', 'baz']
-
+#             estools.load.data.sys.stdin = ['foo', 'bar', 'baz']
+            estools.load.data.sys.stdin = StringIO.StringIO("foo\nbar\nbaz\n")
             with open("/tmp/esload_test_test_data", "w") as f: f.write("foo\nbar\nbaz\n")
 
             data = estools.load.data.documents(['-', '/tmp/esload_test_test_data'])
@@ -32,6 +33,15 @@ class LoadDataTest(unittest.TestCase):
         finally:
 
             estools.load.data.sys.stdin = tmp
+
+
+    def test_format(self):
+
+        self.assertEqual(estools.load.data.format(""), '{"data": ""}')
+        self.assertEqual(estools.load.data.format(None), '{"data": "None"}')
+        self.assertEqual(estools.load.data.format(False), '{"data": "False"}')
+        self.assertEqual(estools.load.data.format('{"foo": "bar"}'), '{"foo": "bar"}')
+
 
 
 if __name__ == "__main__":

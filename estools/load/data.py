@@ -30,11 +30,13 @@ logger = logging.getLogger(__name__)
 def format(document):
 
     try:
-        json.loads(document)
-        return document
-
-    except ValueError:
-        pass
+        f = float(document)
+    except (ValueError, TypeError):
+        try:
+            json.loads(document)
+            return document
+        except (ValueError, TypeError):
+            pass
 
     try:
         document = {'data': str(document)}
@@ -63,7 +65,14 @@ def _feeds(URIs):
 
         if uri in ['/dev/stdin', '-']:
             logger.debug("reading from: stdin")
-            yield sys.stdin
+#             yield sys.stdin
+            def stdin():
+                while True:
+                    line = sys.stdin.readline()
+                    if not line:
+                        break
+                    yield line
+            yield stdin()
             logger.debug("exhausted: stdin")
 
         elif uri.startswith('http://'):
