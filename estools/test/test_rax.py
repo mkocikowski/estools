@@ -10,11 +10,17 @@ import json
 import logging
 import collections
 
-import pyrax
+try:
+    import pyrax
+    import estools.rax.client
+    RS_USERNAME = os.environ['OS_USERNAME']
+    RS_PASSWORD = os.environ['OS_PASSWORD']
 
-import estools.rax.client
+except (ImportError, KeyError):
+    pyrax = False
 
 
+@unittest.skipIf(pyrax == False, "pyrax not installed or OS_USERNAME and OS_PASSWORD env variables not set")
 class RaxTest(unittest.TestCase):
 
     @classmethod
@@ -33,20 +39,12 @@ class RaxTest(unittest.TestCase):
         self.assertEqual(['IAD', 'DFW'], estools.rax.client.get_connections().keys())
 
 
-#     def test_get_object(self):
-#         with estools.rax.client.fetch_object('IAD', 'foo', 'sample_small.json') as (meta, chunks):
-# #             for chunk in chunks:
-# #                 print((meta, chunk))
-# #                 print("-------")
-#             i = estools.rax.client.x(chunks)
-#             for x in i:
-#                 print(x)
-
     def test_get_lines(self):
         for line in estools.rax.client.get_lines(path='IAD/foo/sample_small.json'):
             print(line)
 
 
+@unittest.skipIf(pyrax == False, "pyrax not installed or OS_USERNAME and OS_PASSWORD env variables not set")
 class RaxUtilTest(unittest.TestCase):
 
     def test_from_path(self):

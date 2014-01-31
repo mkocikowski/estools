@@ -18,7 +18,11 @@ import collections
 import itertools
 import json
 
-import estools.rax.client
+try:
+    import estools.rax.client
+except ImportError:
+#     logger.warning("pyrax not installed, CloudFiles download not available")
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +72,15 @@ def _feeds(URIs):
             pass
 
         elif uri.startswith('cf://'):
-            logger.debug("reading from: %s", uri)
-            estools.rax.client.set_credentials()
-            yield estools.rax.client.get_lines(path=uri)
-            logger.debug("exhausted: %s", uri)
+            try:
+                logger.debug("reading from: %s", uri)
+                estools.rax.client.set_credentials()
+                yield estools.rax.client.get_lines(path=uri)
+                logger.debug("exhausted: %s", uri)
+            except (NameError, ):
+                logger.warning("rackspace cloud not supported, you must install 'pyrax' with 'pip install pyrax'")
+            except (Exception, ) as exc:
+                logger.error(exc)
 
         else:
             try:

@@ -90,9 +90,11 @@ def main():
             else:
                 print(doc)
 
-    except (IOError,) as exc:
+    except (IOError, ) as exc:
         logger.debug(exc)
 
+    except (KeyboardInterrupt, ) as exc:
+        pass
 
 
 if __name__ == "__main__":

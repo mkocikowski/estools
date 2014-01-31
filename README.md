@@ -44,6 +44,20 @@ You can combine data from multiple sources by listing multiple URIs:
 
     esload my_index data1.json cf://DFW/foo/data2.json
 
+Load data from Kafka
+--------------------
+
+A straight run-through:
+    
+    bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic my_topic --group my_group | esload test_index
+
+Using a named pipe you can persist better and have multiple producers and loaders: 
+
+    mkfifo data_pipe
+    bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic my_topic --group my_group > data_pipe
+    esload test_index data_pipe
+
+
 Copying data
 ------------
 You can dump data from an ES index with the 'esdump' command. You can then

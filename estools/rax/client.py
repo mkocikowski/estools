@@ -12,23 +12,7 @@ import contextlib
 import itertools
 
 import pyrax
-
-# DOCS:
-# https://github.com/rackspace/pyrax/blob/master/docs/cloud_files.md
-
-
-# alternately, you can have a file ~/.pyrax.cfg:
-# [default]
-# identity_type = rackspace
-# region = DFW
-# debug = True
-
-RS_REGIONS = ['DFW', 'IAD']
-RS_USERNAME = os.environ['OS_USERNAME']
-RS_PASSWORD = os.environ['OS_PASSWORD']
-
 pyrax.set_setting("identity_type", "rackspace")
-# pyrax.set_setting("region", RS_REGIONs[0])
 pyrax.set_http_debug(False)
 
 import estools.common.api
@@ -37,6 +21,26 @@ import estools.load.data
 
 logger = logging.getLogger(__name__)
 logging.getLogger('swiftclient').setLevel(logging.WARNING)
+
+# DOCS:
+# https://github.com/rackspace/pyrax/blob/master/docs/cloud_files.md
+
+# alternately, you can have a file ~/.pyrax.cfg:
+# [default]
+# identity_type = rackspace
+# region = DFW
+# debug = True
+
+RS_REGIONS = ['DFW', 'IAD']
+
+RS_USERNAME = False
+RS_PASSWORD = False
+try:
+    RS_USERNAME = os.environ['OS_USERNAME']
+    RS_PASSWORD = os.environ['OS_PASSWORD']
+except (KeyError, ) as exc:
+    logger.debug("to connect to Cloudfiles, make sure OS_USERNAME and OS_PASSWORD environment variables are set")
+
 
 
 def args_parser():
@@ -48,7 +52,11 @@ def args_parser():
 
 
 def set_credentials(username=RS_USERNAME, password=RS_PASSWORD):
-    pyrax.set_credentials(username, password)
+    try:
+        pyrax.set_credentials(username, password)
+    except Exception as exc:
+        logger.error(exc)
+        raise ValueError("incorrect Rackspace credentials, make sure your OS_USERNAME and OS_PASSWORD environment vars are set correctly")
 #     logger.debug(pyrax.identity.__dict__)
 
 
