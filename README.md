@@ -46,16 +46,11 @@ You can combine data from multiple sources by listing multiple URIs:
 
 Load data from Kafka
 --------------------
+Note that you have to quote the URI to not confuse the shell:
 
-A straight run-through:
+    esload my_index "kafka://192.168.44.11:9093,192.168.44.11:9094;;mytopic"
+    esload my_index "kafka://192.168.44.11:9093,192.168.44.11:9094;mygroup;mytopic"
     
-    bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic my_topic --group my_group | esload test_index
-
-Using a named pipe you can persist better and have multiple producers and loaders: 
-
-    mkfifo data_pipe
-    bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic my_topic --group my_group > data_pipe
-    esload test_index data_pipe
 
 
 Copying data

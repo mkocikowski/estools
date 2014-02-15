@@ -24,6 +24,12 @@ except ImportError:
 #     logger.warning("pyrax not installed, CloudFiles download not available")
     pass
 
+try: 
+    import estools.kafka.client
+except ImportError:
+#     logger.warning("kafka-python-basic not installed, kafka feed not available")
+    pass
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,17 +54,17 @@ def format(document):
         return None
 
 
-def documents(URIs=None, mode='line'):
+def documents(URIs=None, mode='line', failfast=False):
 
     if mode == 'line':
-        f = itertools.chain.from_iterable(_feeds(URIs))
+        f = itertools.chain.from_iterable(_feeds(URIs, failfast=failfast))
         return (line.strip() for line in f)
 
     if mode == 'file':
-        return ("".join(feed) for feed in _feeds(URIs))
+        return ("".join(feed) for feed in _feeds(URIs, failfast=failfast))
 
 
-def _feeds(URIs):
+def _feeds(URIs, failfast=False):
 
     for uri in URIs:
         uri = uri.strip().lower()
@@ -88,6 +94,16 @@ def _feeds(URIs):
                 logger.debug("exhausted: %s", uri)
             except (NameError, ):
                 logger.warning("rackspace cloud not supported, you must install 'pyrax' with 'pip install pyrax'")
+            except (Exception, ) as exc:
+                logger.error(exc)
+
+        elif uri.startswith('kafka://'):
+            try:
+                logger.debug("reading from: %s", uri)
+                yield estools.kafka.client.get_lines(path=uri, failfast=True)
+                logger.debug("exhausted: %s", uri)
+            except (NameError, ):
+                logger.warning("kafka feed not supported, you must install 'kafka-python-basic', see: https://github.com/mkocikowski/kafka-python-basic")
             except (Exception, ) as exc:
                 logger.error(exc)
 

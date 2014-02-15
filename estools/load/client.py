@@ -27,6 +27,8 @@ def args_parser():
     parser.add_argument('--strict', action='store_true', help="if set, barf on malformed json; (%(default)s)")
     parser.add_argument('--idpath', action='store', type=str, default='id', help="name of the source field containing docment ids (%(default)s)")
     parser.add_argument('--doctype', action='store', type=str, default='doc', help="doctype (follows index name in es path); (%(default)s)")
+    parser.add_argument('--verbose', '-v', action='count', default=0, help="try -v, -vv, -vvv")
+    parser.add_argument('--failfast', action='store_true', help="if set, exit on any error")
     parser.add_argument('index', type=str, action='store', help='name of the target ES index. Use magic value "-" to dump data to stdout, without touching Elasticsearch. ')
     parser.add_argument('uris', metavar='URIs', nargs="*", type=str, action='store', default=['/dev/stdin'], help="read data from URI(s); (%(default)s)")
 
@@ -45,8 +47,9 @@ def _mapping(doctype=None, idpath=None):
 
 def main():
 
-    estools.common.log.set_up_logging(level=logging.DEBUG)
     args = args_parser().parse_args()
+#     estools.common.log.set_up_logging(level=logging.DEBUG)
+    estools.common.log.set_up_logging(level=logging.ERROR-(args.verbose*10))
     session = requests.Session()
 
     if args.index != '-':
@@ -82,7 +85,7 @@ def main():
 
 
     format_f = estools.load.data.format
-    documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode))
+    documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode, failfast=args.failfast))
     try:
         for n, doc in enumerate((d for d in documents if d)):
             if args.index != '-':
