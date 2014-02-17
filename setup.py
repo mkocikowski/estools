@@ -26,6 +26,7 @@ setup(
         'estools.load',
         'estools.dump',
         'estools.rax',
+        'estools.kafka', 
         'estools.common',
     ],
     package_data = {
