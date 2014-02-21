@@ -16,14 +16,9 @@ except (ImportError, KeyError):
 class KafkaTest(unittest.TestCase):
 
     def test_from_path(self):
-        hosts, group, topic = estools.kafka.client.from_path("kafka://192.168.44.11:9093,192.168.44.11:9094;;topic01")
+        hosts, topic = estools.kafka.client.from_path("kafka://192.168.44.11:9093,192.168.44.11:9094;topic01")
         self.assertEqual("192.168.44.11:9093,192.168.44.11:9094", hosts)
         self.assertEqual("topic01", topic)
-        self.assertEqual(None, group)
-        hosts, group, topic = estools.kafka.client.from_path("kafka://192.168.44.11:9093,192.168.44.11:9094;group01;topic01")
-        self.assertEqual("192.168.44.11:9093,192.168.44.11:9094", hosts)
-        self.assertEqual("topic01", topic)
-        self.assertEqual("group01", group)
         
 
 

@@ -5,14 +5,13 @@ import kafka.consumer
 
 
 def from_path(path):    
-    hosts, group, topic = re.search(r"(?:kafka://)(.*)(?:;)(.*)(?:;)(.*$)", path).groups()
-    if not group: group = None
-    return (hosts, group, topic)
+    hosts, topic = re.search(r"(?:kafka://)(.*)(?:;)(.*$)", path).groups()
+    return (hosts, topic)
     
 
 def get_lines(path, failfast=False): 
-    hosts, group, topic = from_path(path)
-    with kafka.consumer.KafkaConsumer(hosts, group, topic, failfast=failfast) as consumer:
+    hosts, topic = from_path(path)
+    with kafka.consumer.KafkaConsumer(hosts=hosts, group="", topic=topic, whence=kafka.consumer.WHENCE_TAIL, failfast=failfast) as consumer:
         while True: 
             messages = consumer.fetch()
             for m in messages:
