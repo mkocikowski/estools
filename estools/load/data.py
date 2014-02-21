@@ -17,6 +17,7 @@ import contextlib
 import collections
 import itertools
 import json
+import time
 
 try:
     import estools.rax.client
@@ -54,17 +55,30 @@ def format(document):
         return None
 
 
-def documents(URIs=None, mode='line', failfast=False):
+def documents(URIs=None, mode='line', failfast=False, follow=False):
 
     if mode == 'line':
-        f = itertools.chain.from_iterable(_feeds(URIs, failfast=failfast))
+        f = itertools.chain.from_iterable(_feeds(URIs, failfast=failfast, follow=follow))
         return (line.strip() for line in f)
 
     if mode == 'file':
-        return ("".join(feed) for feed in _feeds(URIs, failfast=failfast))
+        return ("".join(feed) for feed in _feeds(URIs, failfast=failfast, follow=follow))
 
 
-def _feeds(URIs, failfast=False):
+def _lines(file_h, follow=False):
+
+    while True:
+        line = file_h.readline()
+        if line:
+            yield line
+        else:
+            if not follow:
+                break
+            time.sleep(0.1)
+                
+
+
+def _feeds(URIs, failfast=False, follow=False):
 
     for uri in URIs:
         uri = uri.strip().lower()
@@ -72,13 +86,13 @@ def _feeds(URIs, failfast=False):
         if uri in ['/dev/stdin', '-']:
             logger.debug("reading from: stdin")
 #             yield sys.stdin
-            def stdin():
-                while True:
-                    line = sys.stdin.readline()
-                    if not line:
-                        break
-                    yield line
-            yield stdin()
+#             def stdin():
+#                 while True:
+#                     line = sys.stdin.readline()
+#                     if not line:
+#                         break
+#                     yield line
+            yield _lines(sys.stdin, follow=follow)
             logger.debug("exhausted: stdin")
 
         elif uri.startswith('http://'):
@@ -112,8 +126,8 @@ def _feeds(URIs, failfast=False):
                 # http://stackoverflow.com/a/85237/469997
                 path = os.path.abspath(uri)
                 logger.debug("reading from: %s", path)
-                with open(path) as f:
-                    yield f
+                with open(path, "rU") as f:
+                    yield _lines(f, follow=follow)
                 logger.debug("exhausted: %s", path)
             except IOError as exc:
                 logger.warning(exc)
