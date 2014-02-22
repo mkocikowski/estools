@@ -7,6 +7,7 @@ import logging
 import sys
 import itertools
 import json
+import time
 
 import requests
 
@@ -48,57 +49,64 @@ def _mapping(doctype=None, idpath=None):
 
 def main():
 
-    args = args_parser().parse_args()
-#     estools.common.log.set_up_logging(level=logging.DEBUG)
-    estools.common.log.set_up_logging(level=logging.ERROR-(args.verbose*10))
-    session = requests.Session()
+    try: 
 
-    if args.index != '-':
+        args = args_parser().parse_args()
+    #     estools.common.log.set_up_logging(level=logging.DEBUG)
+        estools.common.log.set_up_logging(level=logging.ERROR-(args.verbose*10))
+        session = requests.Session()
 
-        if args.wipe:
-            response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
+        if args.index != '-':
 
-        response = estools.common.api.create_index(
-                        session=session,
-                        host=args.host,
-                        port=args.port,
-                        index=args.index,
-        )
-        response = estools.common.api.put_mapping(
-                        session=session,
-                        host=args.host,
-                        port=args.port,
-                        index=args.index,
-                        doctype=args.doctype,
-                        mapping=_mapping(
+            if args.wipe:
+                response = estools.common.api.delete_index(session=session, host=args.host, port=args.port, index=args.index)
+
+            response = estools.common.api.create_index(
+                            session=session,
+                            host=args.host,
+                            port=args.port,
+                            index=args.index,
+            )
+            response = estools.common.api.put_mapping(
+                            session=session,
+                            host=args.host,
+                            port=args.port,
+                            index=args.index,
                             doctype=args.doctype,
-                            idpath=args.idpath,
-                        ),
-        )
+                            mapping=_mapping(
+                                doctype=args.doctype,
+                                idpath=args.idpath,
+                            ),
+            )
 
-        # this is needed because until a new index is opened it is no allocated,
-        # and until it is allocated the settings cannot be updated, so in effect
-        # it needs to be opened, closed, updated, and opened
-        response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
+            # this is needed because until a new index is opened it is no allocated,
+            # and until it is allocated the settings cannot be updated, so in effect
+            # it needs to be opened, closed, updated, and opened
+            response = estools.common.api.open_index(session=session, host=args.host, port=args.port, index=args.index)
 
-        # closes the index, updates the settings, reopens the index
-        estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
+            # closes the index, updates the settings, reopens the index
+            estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
 
 
-    format_f = estools.load.data.format
-    documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode, failfast=args.failfast, follow=args.follow))
-    try:
-        for n, doc in enumerate((d for d in documents if d)):
-            if args.index != '-':
-                response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
-            else:
-                print(doc)
+        format_f = estools.load.data.format
+        documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode, failfast=args.failfast, follow=args.follow))
+        try:
+            for n, doc in enumerate((d for d in documents if d)):
+                if args.index != '-':
+                    response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+                else:
+                    print(doc)
 
-    except (IOError, ) as exc:
-        logger.debug(exc)
+        except (IOError, ) as exc:
+            logger.debug(exc)
 
-    except (KeyboardInterrupt, ) as exc:
-        pass
+        except (KeyboardInterrupt, ) as exc:
+            pass
+
+    except IOError as exc:
+        logger.error(exc, exc_info=True)
+        logger.info("sleeping for 3s, hoping for the es to come up")
+        time.sleep(3)
 
 
 if __name__ == "__main__":
