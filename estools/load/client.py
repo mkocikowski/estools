@@ -8,6 +8,7 @@ import sys
 import itertools
 import json
 import time
+import functools
 
 import requests
 
@@ -88,7 +89,7 @@ def main():
             estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
 
 
-        format_f = estools.load.data.format_document
+        format_f = functools.partial(estools.load.data.format_document, strict=args.strict)
         documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode, failfast=args.failfast, follow=args.follow))
         try:
             for n, doc in enumerate((d for d in documents if d)):
