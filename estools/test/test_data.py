@@ -19,28 +19,29 @@ class LoadDataTest(unittest.TestCase):
     def test_data(self):
 
         try:
-
             tmp = estools.load.data.sys.stdin
-#             estools.load.data.sys.stdin = ['foo', 'bar', 'baz']
             estools.load.data.sys.stdin = StringIO.StringIO("foo\nbar\nbaz\n")
-            with open("/tmp/esload_test_test_data", "w") as f: f.write("foo\nbar\nbaz\n")
-
+            with open("/tmp/esload_test_test_data", "w") as f: 
+                f.write("foo\nbar\nbaz\n")
             data = estools.load.data.documents(['-', '/tmp/esload_test_test_data'])
             self.assertIsInstance(data, collections.Iterable)
             data = list(data)
             self.assertEqual(6, len(data))
 
         finally:
-
             estools.load.data.sys.stdin = tmp
 
 
-    def test_format(self):
+    def test_format_document(self):
 
-        self.assertEqual(estools.load.data.format(""), '{"data": ""}')
-        self.assertEqual(estools.load.data.format(None), '{"data": "None"}')
-        self.assertEqual(estools.load.data.format(False), '{"data": "False"}')
-        self.assertEqual(estools.load.data.format('{"foo": "bar"}'), '{"foo": "bar"}')
+        self.assertRaises(TypeError, estools.load.data.format_document, None)
+        self.assertRaises(TypeError, estools.load.data.format_document, False)
+
+        self.assertEqual(estools.load.data.format_document(""), '{"data": ""}')
+        self.assertEqual(estools.load.data.format_document('foo'), '{"data": "foo"}') # not a json value
+        self.assertEqual(estools.load.data.format_document('"foo"'), '{"data": "foo"}') # json value
+        self.assertEqual(estools.load.data.format_document('["foo", "bar"]'), '{"data": ["foo", "bar"]}')
+        self.assertEqual(estools.load.data.format_document('{"foo": "bar"}'), '{"foo": "bar"}')
 
 
 

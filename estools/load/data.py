@@ -4,17 +4,8 @@
 
 
 import sys
-
 import os.path
 import logging
-import argparse
-import sys
-import urllib2
-import gzip
-import itertools
-import string
-import contextlib
-import collections
 import itertools
 import json
 import time
@@ -34,25 +25,53 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def format(document):
-
+def format_document(document_s=None, strict=False):
+    """Return a json string with content of input. 
+    
+    If the input is a valid json object, then return it. If it is not
+    a valid json object (but an array or a value), then raise
+    ValueError if 'strict', else return a json object with key 'data',
+    the value of which is the input.  
+    
+    Args:
+        document_s: string, possible containing a json object
+        strict: bool, default False. If True, raise ValueError if
+            document_s is not a json object
+    
+    Returns:
+        json string
+    
+    Raises:
+        TypeError if document_s is not a 'str'
+        ValueError if 'strict' and document_s is not a json object
+        
+    """
+    
+    # python json library is too permissive
+    # http://docs.python.org/2/library/json.html#top-level-non-object-non-array-values
+    
+    data = None
+    data_s = None
+    
+    if type(document_s) is not str:
+        raise TypeError("'document_s' must be a str")
+    
     try:
-        f = float(document)
-    except (ValueError, TypeError):
-        try:
-            json.loads(document)
-            return document
-        except (ValueError, TypeError):
-            pass
-
-    try:
-        document = {'data': str(document)}
-        document = json.dumps(document)
-        return document
-
-    except (ValueError, TypeError) as exc:
-        logger.warning("failed to format a document into json", exc_info=True)
-        return None
+        data = json.loads(document_s)
+    except (TypeError, ValueError):
+        if strict:
+            raise ValueError("'document_s' must be a valid json object")
+        data = document_s
+    
+    if type(data) is not dict:
+        data = {"data": data}
+    
+    try: 
+        data_s = json.dumps(data)
+    except (UnicodeError, TypeError, ValueError) as exc: 
+        logger.debug("can't format data info json: %s", exc, exc_info=True)
+    
+    return data_s
 
 
 def documents(URIs=None, mode='line', failfast=False, follow=False):
@@ -85,13 +104,6 @@ def _feeds(URIs, failfast=False, follow=False):
 
         if uri in ['/dev/stdin', '-']:
             logger.debug("reading from: stdin")
-#             yield sys.stdin
-#             def stdin():
-#                 while True:
-#                     line = sys.stdin.readline()
-#                     if not line:
-#                         break
-#                     yield line
             yield _lines(sys.stdin, follow=follow)
             logger.debug("exhausted: stdin")
 

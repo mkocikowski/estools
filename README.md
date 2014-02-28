@@ -48,10 +48,7 @@ Load data from Kafka
 --------------------
 Note that you have to quote the URI to not confuse the shell:
 
-    esload my_index "kafka://192.168.44.11:9093,192.168.44.11:9094;;mytopic"
-    esload my_index "kafka://192.168.44.11:9093,192.168.44.11:9094;mygroup;mytopic"
-    
-
+    esload my_index "kafka://192.168.44.11:9093,192.168.44.11:9094;mytopic"    
 
 Copying data
 ------------

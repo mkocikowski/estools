@@ -88,12 +88,13 @@ def main():
             estools.common.api.set_ignore_malformed(session=session, host=args.host, port=args.port, index=args.index, ignore=not args.strict)
 
 
-        format_f = estools.load.data.format
+        format_f = estools.load.data.format_document
         documents = itertools.imap(format_f, estools.load.data.documents(URIs=args.uris, mode=args.mode, failfast=args.failfast, follow=args.follow))
         try:
             for n, doc in enumerate((d for d in documents if d)):
                 if args.index != '-':
                     response = estools.common.api.index_document(session=session, host=args.host, port=args.port, index=args.index, doctype=args.doctype, docid=None, data=doc)
+                    logger.info(response.curl)
                 else:
                     print(doc)
 
