@@ -54,7 +54,7 @@ def main():
 
         args = args_parser().parse_args()
     #     estools.common.log.set_up_logging(level=logging.DEBUG)
-        estools.common.log.set_up_logging(level=logging.ERROR-(args.verbose*10))
+        estools.common.log.set_up_logging(level=logging.WARNING-(args.verbose*10))
         session = requests.Session()
 
         if args.index != '-':
