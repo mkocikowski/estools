@@ -50,7 +50,7 @@ def format(document):
         document = json.dumps(document)
         return document
 
-    except (ValueError, TypError) as exc:
+    except (ValueError, TypeError) as exc:
         logger.warning("failed to format a document into json", exc_info=True)
         return None
 
