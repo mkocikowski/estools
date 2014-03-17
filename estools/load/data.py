@@ -100,7 +100,7 @@ def _lines(file_h, follow=False):
 def _feeds(URIs, failfast=False, follow=False):
 
     for uri in URIs:
-        uri = uri.strip().lower()
+        uri = uri.strip()
 
         if uri in ['/dev/stdin', '-']:
             logger.debug("reading from: stdin")
