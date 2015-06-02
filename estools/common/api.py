@@ -22,7 +22,7 @@ def request(ignore_codes=None):
             if response.status_code > 299 and response.status_code not in ignore_codes:
                 LOGGER.error("(%i) : %s : %s", response.status_code, url, response.text)
                 raise RuntimeError("status code %i returned by es call" % response.status_code)
-            return response
+            return url, response
 
         return wrapper
 

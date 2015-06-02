@@ -21,6 +21,10 @@ import estools.common.api as api
 LOGGER = logging.getLogger(__name__)
 
 
+def _path(s):
+    return os.path.abspath(os.path.expanduser(s))
+
+
 def chunker(iterable=None, chunklen=None):
     """Collects data into fixed-length chunks.
 
@@ -51,23 +55,40 @@ def upload(params=None, records=None):
         return '{"index":{}}\n%s\n' % l
 
     t1 = time.time()
-    body = ((_fmt(line), len(line)) for line in records if line)
-    api.index_bulk(params=params, data="".join(body))
-    LOGGER.info("uploaded %i documents in %.2fs", len(body), time.time()-t1)
+    lines = [_fmt(line) for line in records if line]
+    _, response = api.index_bulk(params=params, data="".join(lines))
 
-#     if response['errors']:
-#         LOGGER.error(response)
-#         for item in response['errors']:
-#             if 'error' in item:
-#                 LOGGER.warn(item['error'])
+    size_b = 0
+    for l in lines:
+        size_b += len(l)
+    size_mb = float(size_b) / 2**20
+    time_s = time.time() - t1
+
+    LOGGER.info(
+        "uploaded %i documents (%.2fMB) in %.2fs (%.2fMB/s)",
+        len(lines), size_mb, time_s, size_mb / time_s,
+    )
+
+    # if there were errors with individual items, log them on DEBUG.
+    # parsing the response is somewhat expensive, so do it only when
+    # effective logging level is DEBUG
+    if LOGGER.getEffectiveLevel() <= logging.DEBUG:
+        response = response.json()
+        if response['errors']:
+            for item in response['items']:
+                if 'error' in item.values()[0]:
+                    LOGGER.debug(item)
 
 
 def create_index(params=None, args=None):
 
     settings = None
     if args.index_settings_path:
-        with open(_path(args.index_settings_path), "rU") as f:
+        fp = _path(args.index_settings_path)
+        with open(fp, "rU") as f:
             settings = json.loads(f.read())
+        LOGGER.debug("loaded index config from %s", fp)
+
     else:
         settings = {"settings": {}}
 
@@ -78,15 +99,29 @@ def create_index(params=None, args=None):
     api.create_index(params=params, settings=json.dumps(settings))
 
 
+def put_mapping(params=None, args=None):
+
+    mapping = {}
+    if args.mapping_path:
+        fp = _path(args.mapping_path)
+        with open(fp, "rU") as f:
+            mapping = json.loads(f.read())
+        LOGGER.debug("loaded mapping from %s", fp)
+
+    if args.id_field:
+        mapping['_id'] = {'path': args.id_field}
+        LOGGER.debug("set mapping's '_id' to: %s", mapping['_id'])
+
+    if mapping != {}:
+        api.put_mapping(params=params, mapping=json.dumps(mapping))
+
+
 Params = collections.namedtuple(
     "Params",
     ["session", "host", "port", "index", "type",]
 )
 
 def run(args=None, session=None, input_i=None):
-
-    def _path(s):
-        return os.path.abspath(os.path.expanduser(s))
 
     params = Params(session, args.host, args.port, args.index, args.type,)
 
@@ -102,20 +137,13 @@ def run(args=None, session=None, input_i=None):
         api.update_setting(params=params, key="store.throttle.max_bytes_per_sec", value=args.throttle)
 
     try:
-
-        if args.mapping_path:
-            with open(_path(args.mapping_path), "rU") as f:
-                mapping = f.read()
-            api.put_mapping(params=params, mapping=mapping)
-
+        put_mapping(params=params, args=args)
         for batch in chunker(iterable=input_i, chunklen=args.batch_size):
             upload(params=params, records=batch)
 
     finally:
         api.update_setting(params=params, key="store.throttle.type", value="merge")
         api.update_setting(params=params, key="refresh_interval", value="1s")
-#         if args.segments > 0:
-#             api.optimize_index(params=params, max_num_segments=args.segments)
 
 
 def args_parser():
@@ -131,6 +159,7 @@ Upload documents to ES index. Takes documents on stdin, one document per line.
     parser.add_argument('--batch-size', metavar='N', type=int, action='store', default=5000, help="batch size; (%(default)s)")
     parser.add_argument('--shards', type=int, action='store', default=-1, help="number of primary shards; (%(default)s)")
     parser.add_argument('--throttle', type=str, action='store', default=None, help="limit upload to SIZE / sec; (%(default)s)")
+    parser.add_argument('--id-field', type=str, action='store', default=None)
     parser.add_argument('--mapping-path', metavar='PATH', type=str, action='store', default=None, help="path to mapping file; (%(default)s)")
     parser.add_argument('--index-settings-path', metavar='PATH', type=str, action='store', default=None, help="path to index settings file; (%(default)s)")
     parser.add_argument('--wipe', action='store_true', help="if set, wipe the index before inserting data; (%(default)s)")

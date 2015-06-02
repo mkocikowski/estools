@@ -6,7 +6,7 @@
 import unittest
 import logging
 
-import estools.load.client as load
+import estools.load.load as load
 
 
 class LoadClientTest(unittest.TestCase):

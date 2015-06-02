@@ -32,7 +32,7 @@ setup(
     },
     entry_points = {
         'console_scripts': [
-            'esload = estools.load.client:main',
+            'esload = estools.load.load:main',
 #             'esdump = estools.dump.client:main',
         ]
     },
