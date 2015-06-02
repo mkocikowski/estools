@@ -5,6 +5,8 @@ dist/
 build/
 *.egg-info
 
+venv/ 
+
 *.log
 *.tab
 *.sql

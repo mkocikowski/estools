@@ -4,13 +4,14 @@
 
 
 from setuptools import setup
+import estools
 
 ld = """Elasticsearch data handling tools.
 """
 
 setup(
     name = 'estools',
-    version = '0.1.0',
+    version = estools.__version__,
     author = 'Mik Kocikowski',
     author_email = 'mkocikowski@gmail.com',
     url = 'https://github.com/mkocikowski/estools',
@@ -18,15 +19,12 @@ setup(
     long_description = ld,
     install_requires = [
         'requests >= 2.1.0',
-#         'pyrax >= 1.6.2',
     ],
     packages = [
         'estools',
         'estools.test',
         'estools.load',
         'estools.dump',
-        'estools.rax',
-        'estools.kafka', 
         'estools.common',
     ],
     package_data = {
@@ -35,7 +33,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'esload = estools.load.client:main',
-            'esdump = estools.dump.client:main',
+#             'esdump = estools.dump.client:main',
         ]
     },
     classifiers = [
