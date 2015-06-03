@@ -21,8 +21,31 @@ import estools.common.api as api
 LOGGER = logging.getLogger(__name__)
 
 
-def _path(s):
-    return os.path.abspath(os.path.expanduser(s))
+def load_json(file_name=""):
+    """Load json object from specified file.
+
+    Args:
+        file_name: relative or absolute path
+
+    Returns:
+        dict or list, or, if file_name=="", None
+
+    Raises:
+        IOError: problem accessing / reading the file
+        ValueError: problem parsing json
+
+    """
+
+    if not file_name:
+        return None
+
+    fp = os.path.abspath(os.path.expanduser(file_name))
+    with open(fp, "rU") as f:
+        data = json.loads(f.read())
+
+    LOGGER.debug("loaded %s", fp)
+    return data
+
 
 
 def chunker(iterable=None, chunklen=None):
@@ -55,7 +78,16 @@ def chunker(iterable=None, chunklen=None):
     return (v for _, v in groups)
 
 
-def upload(params=None, records=None):
+def index(params=None, records=None):
+    """Bulk index a single batch of records.
+
+    Args:
+        params:
+        records: iterable of json objects
+
+    Returns:
+        (doc_count, error_count)
+    """
 
     def _fmt(l):
         return '{"index":{}}\n%s\n' % l
@@ -69,83 +101,103 @@ def upload(params=None, records=None):
         size_b += len(l)
     size_mb = float(size_b) / 2**20
     time_s = time.time() - t1
+    doc_count = len(lines)
 
-    LOGGER.info(
-        "uploaded %i documents (%.2fMB) in %.2fs (%.2fMB/s)",
-        len(lines), size_mb, time_s, size_mb / time_s,
-    )
-
-    # if there were errors with individual items, log them on DEBUG.
-    # parsing the response is somewhat expensive, so do it only when
-    # effective logging level is DEBUG
-    if LOGGER.getEffectiveLevel() <= logging.DEBUG:
+    error_count = 0
+    if params.count_errors:
         response = response.json()
         if response['errors']:
             for item in response['items']:
                 if 'error' in item.values()[0]:
+                    error_count += 1
                     LOGGER.debug(item)
 
+    LOGGER.info(
+        "uploaded %i documents (errors: %i) (%.2fMB) in %.2fs (%.2fMB/s)",
+        doc_count, error_count, size_mb, time_s, size_mb / time_s,
+    )
 
-def create_index(params=None, args=None):
+    return doc_count, error_count
 
-    settings = None
-    if args.index_settings_path:
-        fp = _path(args.index_settings_path)
-        with open(fp, "rU") as f:
-            settings = json.loads(f.read())
-        LOGGER.debug("loaded index config from %s", fp)
 
-    else:
+def create_index(params=None, settings=None):
+    """
+    Args:
+        params:
+        settings: dict
+
+    """
+
+    if not settings:
         settings = {"settings": {}}
 
-    if args.shards > 0:
-        settings['settings']['number_of_shards'] = args.shards
+    if 'settings' not in settings:
+        settings['settings'] = {}
+
+    if params.shards > 0:
+        settings['settings']['number_of_shards'] = params.shards
 
     settings['settings']['number_of_replicas'] = 0
     api.create_index(params=params, settings=json.dumps(settings))
 
+    return settings
 
-def put_mapping(params=None, args=None):
 
-    mapping = {}
-    if args.mapping_path:
-        fp = _path(args.mapping_path)
-        with open(fp, "rU") as f:
-            mapping = json.loads(f.read())
-        LOGGER.debug("loaded mapping from %s", fp)
+def put_mapping(params=None, mapping=None):
+    """
+    Args:
+        params:
+        mapping: dict
 
-    if args.id_field:
-        mapping['_id'] = {'path': args.id_field}
+    """
+
+    if not mapping:
+        mapping = {}
+
+    if params.id_field:
+        mapping['_id'] = {'path': params.id_field}
         LOGGER.debug("set mapping's '_id' to: %s", mapping['_id'])
 
     if mapping != {}:
         api.put_mapping(params=params, mapping=json.dumps(mapping))
 
+    return mapping
 
-Params = collections.namedtuple(
-    "Params",
-    ["session", "host", "port", "index", "type",]
-)
 
-def run(args=None, session=None, input_i=None):
+def run(params=None, session=None, input_i=None):
+    """
+    Args:
+        params:
+        session: requests session
+        input_i: iterable of json objects
 
-    params = Params(session, args.host, args.port, args.index, args.type,)
+    Returns:
+        count of indexed documents
+    """
 
-    if args.wipe:
+    params.session = session
+
+    if params.wipe:
         api.delete_index(params=params)
 
-    create_index(params=params, args=args)
+    create_index(params=params, settings=load_json(params.index_settings_path))
     api.update_setting(params=params, key="refresh_interval", value="-1")
     api.update_setting(params=params, key="number_of_replicas", value="0")
-    if args.throttle:
+    if params.throttle:
         # https://www.elastic.co/guide/en/elasticsearch/reference/1.5/index-modules-store.html#store-throttling
         api.update_setting(params=params, key="store.throttle.type", value="all")
-        api.update_setting(params=params, key="store.throttle.max_bytes_per_sec", value=args.throttle)
+        api.update_setting(params=params, key="store.throttle.max_bytes_per_sec", value=params.throttle)
 
     try:
-        put_mapping(params=params, args=args)
-        for batch in chunker(iterable=input_i, chunklen=args.batch_size):
-            upload(params=params, records=batch)
+        put_mapping(params=params, mapping=load_json(params.mapping_path))
+        doc_count = 0
+        error_count = 0
+        for batch in chunker(iterable=input_i, chunklen=params.batch_size):
+            dc, ec = index(params=params, records=batch)
+            doc_count += dc
+            error_count += ec
+
+        return doc_count, error_count
 
     finally:
         api.update_setting(params=params, key="store.throttle.type", value="merge")
@@ -168,6 +220,7 @@ Upload documents to ES index. Takes documents on stdin, one document per line.
     parser.add_argument('--id-field', type=str, action='store', default=None)
     parser.add_argument('--mapping-path', metavar='PATH', type=str, action='store', default=None, help="path to mapping file; (%(default)s)")
     parser.add_argument('--index-settings-path', metavar='PATH', type=str, action='store', default=None, help="path to index settings file; (%(default)s)")
+    parser.add_argument('--count-errors', action='store_true', help="if set, count errors in batches (has performance penalty); (%(default)s)")
     parser.add_argument('--wipe', action='store_true', help="if set, wipe the index before inserting data; (%(default)s)")
     parser.add_argument('index', type=str, help='name of the index')
     parser.add_argument('type', type=str, help='name of the doc type')
@@ -184,7 +237,7 @@ def main():
     )
     logging.getLogger("requests").setLevel(logging.ERROR)
 
-    run(args=args, session=requests.Session(), input_i=sys.stdin)
+    run(params=args, session=requests.Session(), input_i=sys.stdin)
 
 
 if __name__ == "__main__":

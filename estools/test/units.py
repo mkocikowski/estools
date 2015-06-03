@@ -8,8 +8,8 @@ import os.path
 import unittest
 import logging
 
-logging.basicConfig(level=logging.CRITICAL)
-
+logging.basicConfig(level=logging.ERROR)
+logging.getLogger("requests").setLevel(logging.ERROR)
 
 def suite():
     return unittest.defaultTestLoader.discover(os.path.dirname(__file__))

@@ -5,11 +5,102 @@
 
 import unittest
 import logging
+import os
+import time
+
+import requests
 
 import estools.load.load as load
 
 
 class LoadClientTest(unittest.TestCase):
+
+
+    def setUp(self):
+
+        self._tmp_put_mapping = load.api.put_mapping
+        load.api.put_mapping = lambda **kvargs: kvargs
+
+        self._tmp_create_index = load.api.create_index
+        load.api.create_index = lambda **kvargs: kvargs
+
+
+    def tearDown(self):
+
+        load.api.put_mapping = self._tmp_put_mapping
+        load.api.create_index = self._tmp_create_index
+
+
+    def test_create_index(self):
+
+        tests = (
+            (
+                "index1 doctype1",
+                None,
+                {'settings': {'number_of_replicas': 0}},
+            ),
+            (
+                "index1 doctype1 --shards=5",
+                None,
+                {'settings': {'number_of_replicas': 0, 'number_of_shards': 5}},
+            ),
+            (
+                "index1 doctype1 --shards=5",
+                {'foo': 'bar'},
+                {'foo': 'bar', 'settings': {'number_of_replicas': 0, 'number_of_shards': 5}},
+            ),
+            (
+                "index1 doctype1",
+                {'settings': {'number_of_replicas': 3, 'number_of_shards': 3}},
+                {'settings': {'number_of_replicas': 0, 'number_of_shards': 3}},
+            ),
+        )
+
+        for test in tests:
+            params = load.args_parser().parse_args(test[0].split())
+            result = load.create_index(params=params, settings=test[1])
+            self.assertEqual(result, test[2])
+
+
+    def test_put_mapping(self):
+
+        tests = (
+            (
+                "index1 doctype1",
+                None,
+                {},
+            ),
+            (
+                "index1 doctype1 --id-field='foo.bar'",
+                None,
+                {'_id': {'path': "'foo.bar'"}},
+            ),
+            (
+                "index1 doctype1",
+                {'foo': 'bar'},
+                {'foo': 'bar'},
+            ),
+            (
+                "index1 doctype1 --id-field='foo.bar'",
+                {'foo': 'bar'},
+                {'foo': 'bar', '_id': {'path': "'foo.bar'"}},
+            ),
+        )
+
+        for test in tests:
+            params = load.args_parser().parse_args(test[0].split())
+            result = load.put_mapping(params=params, mapping=test[1])
+            self.assertEqual(result, test[2])
+
+
+    def test_load_json(self):
+
+        self.assertIsNone(load.load_json())
+        self.assertIsNone(load.load_json(file_name=""))
+        self.assertRaises(IOError, load.load_json, file_name="/")
+        self.assertRaises(IOError, load.load_json, file_name="nosuchfile.json")
+        self.assertRaises(ValueError, load.load_json, file_name=__file__) # bad json
+
 
     def test_chunker(self):
 
@@ -31,7 +122,44 @@ class LoadClientTest(unittest.TestCase):
             c = [list(c) for c in chunks]
 
 
+@unittest.skipUnless(os.environ.get('LONG', False), "invoke with LONG=1 to run functional test against es instance")
+class FunctionalTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.session = requests.Session()
+
+
+    @classmethod
+    def tearDownClass(cls):
+        r = requests.delete(url="http://127.0.0.1:9200/estools")
+
+
+    def setUp(self):
+        r = requests.delete(url="http://127.0.0.1:9200/estools")
+
+
+    def test_functional(self):
+
+        tests = (
+            ("estools test --wipe --id-field=foo --shards=3", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
+            ("estools test", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
+            ("estools test", ['{"foo": 1}', '{"foo": "bar"}'], 2, 0), # not counting errors
+            ("estools test --count-errors", ['{"foo": 1}', '{"foo": "bar"}'], 2, 1),
+        )
+
+        for test in tests:
+            params = load.args_parser().parse_args(test[0].split())
+            doc_count, error_count = load.run(params=params, session=self.session, input_i=test[1])
+            self.assertEqual(doc_count, test[2])
+            self.assertEqual(error_count, test[3])
+
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(levelname)s %(filename)s:%(funcName)s:%(lineno)d %(message)s'
+    )
+    logging.getLogger('requests').setLevel(logging.ERROR)
     unittest.main()
 

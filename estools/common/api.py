@@ -15,24 +15,30 @@ def request(ignore_codes=None):
         ignore_codes = () # empty tuple
 
     def decorator(f):
-
         def wrapper(*args, **kwargs):
+
             url, response = f(*args, **kwargs)
-#             LOGGER.debug("(%i) : %s", response.status_code, url)
-            if response.status_code > 299 and response.status_code not in ignore_codes:
-                LOGGER.error("(%i) : %s : %s", response.status_code, url, response.text)
-                raise RuntimeError("status code %i returned by es call" % response.status_code)
+            if response.status_code > 299:
+                LOGGER.warn(
+                    "(%i) : %s %s : %s",
+                    response.status_code,
+                    response.request.method,
+                    url,
+                    response.text,
+                )
+                if response.status_code not in ignore_codes:
+                    raise RuntimeError("status code %i returned by es call" % response.status_code)
+
             return url, response
 
         return wrapper
-
     return decorator
 
 
 @request(ignore_codes=(404,))
 def delete_index(params=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s" % params._asdict()
+    url = "http://%(host)s:%(port)i/%(index)s" % vars(params)
     response = params.session.delete(url=url, stream=False)
     return url, response
 
@@ -40,7 +46,7 @@ def delete_index(params=None):
 @request(ignore_codes=(400,))
 def create_index(params=None, settings=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s" % params._asdict()
+    url = "http://%(host)s:%(port)i/%(index)s" % vars(params)
     response = params.session.put(
         url=url,
         data=settings,
@@ -52,7 +58,7 @@ def create_index(params=None, settings=None):
 @request()
 def index_bulk(params=None, data=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_bulk" % params._asdict()
+    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_bulk" % vars(params)
     response = params.session.post(
         url=url,
         data=data,
@@ -65,7 +71,7 @@ def index_bulk(params=None, data=None):
 @request()
 def put_mapping(params=None, mapping=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_mapping" % params._asdict()
+    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_mapping" % vars(params)
     response = params.session.put(
         url=url,
         data=mapping,
@@ -79,7 +85,7 @@ def put_mapping(params=None, mapping=None):
 def update_setting(params=None, key=None, value=None):
 
     query = json.dumps({"index": {key: value}})
-    url = "http://%(host)s:%(port)i/%(index)s/_settings" % params._asdict()
+    url = "http://%(host)s:%(port)i/%(index)s/_settings" % vars(params)
     LOGGER.debug("updating index settings: %s %s", url, query)
     response = params.session.put(
         url=url,
