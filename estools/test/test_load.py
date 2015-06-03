@@ -18,11 +18,17 @@ class LoadClientTest(unittest.TestCase):
             [list(c) for c in chunks],
             [[0,1],[2,3],[4]]
         )
-        chunks = load.chunker(iterable=(s for s in "abcde"), chunklen=2)
+        chunks = load.chunker(iterable="abcde", chunklen=2)
         self.assertEqual(
             [list(c) for c in chunks],
             [['a','b'],['c','d'],['e']]
         )
+
+        self.assertRaises(TypeError, load.chunker, iterable=1, chunklen=2)
+
+        chunks = load.chunker(iterable="abcde") # no chunklen
+        with self.assertRaises(TypeError):
+            c = [list(c) for c in chunks]
 
 
 if __name__ == "__main__":

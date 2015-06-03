@@ -28,8 +28,14 @@ def _path(s):
 def chunker(iterable=None, chunklen=None):
     """Collects data into fixed-length chunks.
 
-    Does not pad the last chunk. Returns iterator.
+    Returns: iterator of iterators. Does not pad the last chunk.
+    Raises: TypeError on bad iterable or chunklen
+
     Example: chunker("abcde", 2) returns (('a', 'b'), ('c', 'd'), ('e'))
+
+    This is better than the functools 'grouper' recipe (using izip on
+    [iter(iterable)] * n) in that there is no performance penalty for
+    really large batches.
 
     """
 
