@@ -33,7 +33,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'esload = estools.load.load:main',
-#             'esdump = estools.dump.client:main',
+            'esdump = estools.dump.dump:main',
         ]
     },
     classifiers = [

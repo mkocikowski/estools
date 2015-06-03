@@ -7,17 +7,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class LogFormatter(logging.Formatter):
-    """http://stackoverflow.com/a/7004565/469997"""
-    def format(self, record):
-        if hasattr(record, 'funcNameOverride'):
-            record.funcName = record.funcNameOverride
-        return super(LogFormatter, self).format(record)
+def set_up_logging(verbosity=0, level=logging.WARNING):
 
+    logging.basicConfig(
+        level=level-(verbosity*10),
+        format='%(levelname)s %(filename)s:%(funcName)s:%(lineno)d %(message)s'
+    )
 
-def set_up_logging(level=logging.INFO):
-    fmt = '%(levelname)s %(name)s.%(funcName)s:%(lineno)s %(message)s'
-    logging.basicConfig(level=level)
-    logging.getLogger().handlers[0].setFormatter(LogFormatter(fmt))
-    logger.debug("set up logging")
+    logging.getLogger("requests").setLevel(logging.ERROR)
 

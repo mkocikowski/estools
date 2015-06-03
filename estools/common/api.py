@@ -19,7 +19,7 @@ def request(ignore_codes=None):
 
             url, response = f(*args, **kwargs)
             if response.status_code > 299:
-                LOGGER.warn(
+                LOGGER.info(
                     "(%i) : %s %s : %s",
                     response.status_code,
                     response.request.method,
@@ -106,76 +106,35 @@ def update_setting(params=None, key=None, value=None):
 #
 
 
+@request()
+def _scan_query(params=None, query=None):
+
+    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_search?search_type=scan&scroll=1m&size=%(page_size)i" % vars(params)
+    response = params.session.get(url=url, data=query, stream=False)
+    return url, response
 
 
-#
-#
-# def set_ignore_malformed(session=None, host='127.0.0.1', port=9200, index=None, ignore=True):
-#
-# # curl -XPOST 'localhost:9200/data/_close'
-# # curl -XPUT localhost:9200/data/_settings -d '{"index.mapping.ignore_malformed" : "true"}'
-# # curl -XPOST 'localhost:9200/data/_open'
-#
-#     close_index(session=session, host=host, port=port, index=index)
-#     update_index(session=session, host=host, port=port, index=index, data=json.dumps({"index.mapping.ignore_malformed": ignore}))
-#     open_index(session=session, host=host, port=port, index=index)
-#
-#
-# @request
-# def get_mapping(session=None, host='127.0.0.1', port=9200, index=None, doctype=None):
-#
-#     verb = "GET"
-#     url = "http://%(host)s:%(port)i/%(index)s/%(doctype)s/_mapping" % locals()
-#     curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s" % locals()
-#     response = session.get(url, stream=False)
-#     return response, curl
-#
-#
-# @request
-# def put_mapping(session=None, host='127.0.0.1', port=9200, index=None, doctype=None, mapping=None):
-#
-#     verb = "PUT"
-#     url = "http://%(host)s:%(port)i/%(index)s/%(doctype)s/_mapping" % locals()
-#     curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s -d '%(mapping)s'" % locals()
-#     response = session.put(url, data=mapping, stream=False)
-#     return response, curl
-#
-#
-# @request
-# def _scan_query(session=None, host='127.0.0.1', port=9200, index=None, doctype=None, query=None):
-#
-#     verb = "GET"
-#     url = "http://%(host)s:%(port)i/%(index)s/%(doctype)s/_search?search_type=scan&scroll=10m&size=50" % locals()
-#     curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s -d '%(query)s'" % locals()
-#     response = session.get(url, data=query, stream=False)
-#     return response, curl
-#
-#
-# @request
-# def _scan_scroll(session=None, host='127.0.0.1', port=9200, index=None, scroll_id=None):
-#
-#     verb = "GET"
-#     url = "http://%(host)s:%(port)i/_search/scroll?scroll=10m" % locals()
-#     curl = "curl -X%(verb)s -H 'Content-type: application/json' %(url)s -d '%(scroll_id)s'" % locals()
-#     response = session.get(url, data=scroll_id, stream=False)
-#     return response, curl
-#
-#
-# def scan_iterator(session=None, host='127.0.0.1', port=9200, index=None, doctype=None, query='{"query": {"match_all": {}}}', raw=False):
-#
-#     response = _scan_query(session=session, host=host, port=port, index=index, doctype=doctype, query=query)
-#     r_data = json.loads(response.data)
-#     while True:
-#         response = _scan_scroll(session=session, host=host, port=port, index=index, scroll_id=r_data['_scroll_id'])
-#         r_data = json.loads(response.data)
-#         if not r_data['hits']['hits']:
-#             break
-#         for hit in r_data['hits']['hits']:
-#             source = hit['_source']
-#             if not raw:
-#                 source['_original'] = {
-#                     '_id': hit['_id'],
-#                     '_type': hit['_type'],
-#                     '_index': hit['_index'],
-#                 }
-#             yield source
+@request()
+def _scan_scroll(params=None, scroll_id=None):
+
+    url = "http://%(host)s:%(port)i/_search/scroll?scroll=1m" % vars(params)
+    response = params.session.get(url=url, data=scroll_id, stream=False)
+    return url, response
+
+
+def scan(params=None, query='{"query": {"match_all": {}}}'):
+    """Execute a scan-scroll query, return results iterator."""
+
+    url, response = _scan_query(params=params, query=query)
+    data = response.json()
+
+    while True:
+
+        url, response = _scan_scroll(params=params, scroll_id=data['_scroll_id'])
+        data = response.json()
+        if not data['hits']['hits']:
+            break
+
+        for hit in data['hits']['hits']:
+            yield hit['_source']
+

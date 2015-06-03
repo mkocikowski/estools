@@ -6,10 +6,10 @@
 import unittest
 import logging
 import os
-import time
 
 import requests
 
+import estools.common.log as log
 import estools.load.load as load
 
 
@@ -107,12 +107,12 @@ class LoadClientTest(unittest.TestCase):
         chunks = load.chunker(iterable=range(5), chunklen=2)
         self.assertEqual(
             [list(c) for c in chunks],
-            [[0,1],[2,3],[4]]
+            [[0, 1], [2, 3], [4]]
         )
         chunks = load.chunker(iterable="abcde", chunklen=2)
         self.assertEqual(
             [list(c) for c in chunks],
-            [['a','b'],['c','d'],['e']]
+            [['a', 'b'], ['c', 'd'], ['e']]
         )
 
         self.assertRaises(TypeError, load.chunker, iterable=1, chunklen=2)
@@ -132,11 +132,11 @@ class FunctionalTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        r = requests.delete(url="http://127.0.0.1:9200/estools")
+        requests.delete(url="http://127.0.0.1:9200/estools")
 
 
     def setUp(self):
-        r = requests.delete(url="http://127.0.0.1:9200/estools")
+        requests.delete(url="http://127.0.0.1:9200/estools")
 
 
     def test_functional(self):
@@ -156,10 +156,7 @@ class FunctionalTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(levelname)s %(filename)s:%(funcName)s:%(lineno)d %(message)s'
-    )
-    logging.getLogger('requests').setLevel(logging.ERROR)
+
+    log.set_up_logging(level=logging.DEBUG)
     unittest.main()
 

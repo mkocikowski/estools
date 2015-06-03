@@ -8,11 +8,13 @@ import os.path
 import unittest
 import logging
 
-logging.basicConfig(level=logging.ERROR)
-logging.getLogger("requests").setLevel(logging.ERROR)
+import estools.common.log as log
+log.set_up_logging(level=logging.ERROR)
+
 
 def suite():
     return unittest.defaultTestLoader.discover(os.path.dirname(__file__))
+
 
 if __name__ == "__main__":
 
