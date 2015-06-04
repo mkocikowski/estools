@@ -8,7 +8,7 @@ with a pipe and profit.
 Installation
 ------------
 
-    pip install --upgrade estools
+    pip install --upgrade https://github.com/mkocikowski/estools/archive/master.zip
     esload --help
     esdump --help
 
