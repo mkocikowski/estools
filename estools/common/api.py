@@ -82,6 +82,28 @@ def put_mapping(params=None, mapping=None):
 
 
 @request()
+def set_alias(params=None, alias=""):
+
+    data = {"actions": [
+        {"remove": {"index": "*", "alias": alias}},
+        {"add": {"index": params.index, "alias": alias}},
+    ]}
+    url = "http://%(host)s:%(port)i/_aliases" % vars(params)
+    LOGGER.info(
+        "removing alias '%s' from all indexes and setting it to index '%s'",
+        alias,
+        params.index,
+    )
+    response = params.session.post(
+        url=url,
+        data=json.dumps(data),
+        stream=False,
+        headers={'content-type': 'application/json'},
+    )
+    return url, response
+
+
+@request()
 def update_setting(params=None, key=None, value=None):
 
     query = json.dumps({"index": {key: value}})

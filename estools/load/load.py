@@ -113,8 +113,12 @@ def index(params=None, records=None):
                     LOGGER.debug(item)
 
     LOGGER.info(
-        "uploaded %i documents (errors: %i) (%.2fMB) in %.2fs (%.2fMB/s)",
-        doc_count, error_count, size_mb, time_s, size_mb / time_s,
+        "uploaded %i documents (errors: %s) (%.2fMB) in %.2fs (%.2fMB/s)",
+        doc_count,
+        error_count if params.count_errors else "n/a",
+        size_mb,
+        time_s,
+        size_mb / time_s,
     )
 
     return doc_count, error_count
@@ -202,12 +206,15 @@ def run(params=None, session=None, input_i=None):
     finally:
         api.update_setting(params=params, key="store.throttle.type", value="merge")
         api.update_setting(params=params, key="refresh_interval", value="1s")
+        if params.alias:
+            api.set_alias(params=params, alias=params.alias)
 
 
 def args_parser():
 
     epilog = """
-Uploads documents to Elasticsearch index. Takes documents on stdin, one document per line.
+Uploads documents to Elasticsearch index. Takes documents on stdin, one
+document per line.
 """
 
     parser = argparse.ArgumentParser(description="Elasticsearch data loader (%s)" % (__version__, ), epilog=epilog)
@@ -215,11 +222,12 @@ Uploads documents to Elasticsearch index. Takes documents on stdin, one document
     parser.add_argument('--host', type=str, action='store', default='127.0.0.1', help="es host; (%(default)s)")
     parser.add_argument('--port', type=int, action='store', default=9200, help="es port; (%(default)s)")
     parser.add_argument('--wipe', action='store_true', help="wipe the index before inserting data; (%(default)s)")
+    parser.add_argument('--alias', type=str, action='store', default=None, help="after upload, remove provided alias from all other indexes, and set for the index to which the data has been uploaded; (%(default)s)")
     parser.add_argument('--batch-size', metavar='N', type=int, action='store', default=5000, help="batch size; (%(default)s)")
     parser.add_argument('--shards', type=int, action='store', default=-1, help="number of primary shards. -1 will use cluster defaults. Number of replicas is always set to 0 for duration of the load; (%(default)s)")
     parser.add_argument('--throttle', type=str, action='store', default=None, help="limit upload to SIZE / sec; this is not exact. SIZE can be '100kb', '1G', etc; default is unthrottled")
     parser.add_argument('--id-field', type=str, action='store', default=None, help="period-separated path to the document field from which doc ids are to be taken; 'foo.bar' will result in mapping: {'_id': {'path': 'foo.bar'}}")
-    parser.add_argument('--count-errors', action='store_true', help="count errors in batchs; degrades speed; (%(default)s)")
+    parser.add_argument('--count-errors', action='store_true', help="count errors in batches; degrades speed; (%(default)s)")
     parser.add_argument('--mapping-path', metavar='PATH', type=str, action='store', default=None, help="path to mapping file; (%(default)s)")
     parser.add_argument('--index-settings-path', metavar='PATH', type=str, action='store', default=None, help="path to index settings file; (%(default)s)")
     parser.add_argument('index', type=str, help='name of the index')
@@ -234,7 +242,11 @@ def main():
     log.set_up_logging(args.verbose)
 
     doc_count, error_count = run(params=args, session=requests.Session(), input_i=sys.stdin)
-    LOGGER.info("processed %i documents, errors: %i", doc_count, error_count)
+    LOGGER.info(
+        "processed %i documents, errors: %s",
+        doc_count,
+        error_count if args.count_errors else 'n/a',
+    )
 
 
 if __name__ == "__main__":
