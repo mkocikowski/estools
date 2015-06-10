@@ -207,7 +207,8 @@ def run(params=None, session=None, input_i=None):
         api.update_setting(params=params, key="store.throttle.type", value="merge")
         api.update_setting(params=params, key="refresh_interval", value="1s")
         if params.alias:
-            api.set_alias(params=params, alias=params.alias)
+            api.close_index(params=params) # async closes index with specified alias
+            api.set_alias(params=params)
 
 
 def args_parser():

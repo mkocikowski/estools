@@ -122,7 +122,7 @@ class LoadClientTest(unittest.TestCase):
             c = [list(c) for c in chunks]
 
 
-@unittest.skipUnless(os.environ.get('LONG', False), "invoke with LONG=1 to run functional test against es instance")
+@unittest.skipIf(os.environ.get('SHORT', False), "invoke with SHORT=1 to skip functional test against es instance")
 class FunctionalTest(unittest.TestCase):
 
     @classmethod
@@ -132,20 +132,21 @@ class FunctionalTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        requests.delete(url="http://127.0.0.1:9200/estools")
+        requests.delete(url="http://127.0.0.1:9200/estools-test")
 
 
     def setUp(self):
-        requests.delete(url="http://127.0.0.1:9200/estools")
+        requests.delete(url="http://127.0.0.1:9200/estools-test")
 
 
     def test_functional(self):
 
         tests = (
-            ("estools test --wipe --id-field=foo --shards=3", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
-            ("estools test", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
-            ("estools test", ['{"foo": 1}', '{"foo": "bar"}'], 2, 0), # not counting errors
-            ("estools test --count-errors", ['{"foo": 1}', '{"foo": "bar"}'], 2, 1),
+            ("estools-test doc --wipe --id-field=foo --shards=3", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
+            ("estools-test doc", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
+            ("estools-test doc --wipe --alias=estools-test-alias", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
+            ("estools-test doc", ['{"foo": 1}', '{"foo": "bar"}'], 2, 0), # not counting errors
+            ("estools-test doc --count-errors", ['{"foo": 1}', '{"foo": "bar"}'], 2, 1),
         )
 
         for test in tests:

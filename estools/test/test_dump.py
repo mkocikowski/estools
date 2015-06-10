@@ -14,14 +14,15 @@ import estools.dump.dump as dump
 import estools.test.test_load as test_load
 
 
-# inherits the skip decorator from test_load.FunctionalTest
+# inherits the skip decorator as well as the set up and clean up from
+# test_load.FunctionalTest
 class FunctionalTest(test_load.FunctionalTest):
 
 
     def test_functional(self):
 
         tests = (
-            ("estools test", ['{"foo": 1}', '{"foo": 2}'],),
+            ("estools-test test", ['{"foo": 1}', '{"foo": 2}'],),
         )
 
         for test in tests:

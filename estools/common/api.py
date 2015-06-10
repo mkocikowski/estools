@@ -81,17 +81,26 @@ def put_mapping(params=None, mapping=None):
     return url, response
 
 
+@request(ignore_codes=(404,))
+def close_index(params=None):
+
+    url = "http://%(host)s:%(port)i/%(alias)s/_close" % vars(params)
+    LOGGER.info("closing index with alias: %s", params.alias)
+    response = params.session.post(url=url)
+    return url, response
+
+
 @request()
-def set_alias(params=None, alias=""):
+def set_alias(params=None):
 
     data = {"actions": [
-        {"remove": {"index": "*", "alias": alias}},
-        {"add": {"index": params.index, "alias": alias}},
+        {"remove": {"index": "*", "alias": params.alias}},
+        {"add": {"index": params.index, "alias": params.alias}},
     ]}
     url = "http://%(host)s:%(port)i/_aliases" % vars(params)
     LOGGER.info(
         "removing alias '%s' from all indexes and setting it to index '%s'",
-        alias,
+        params.alias,
         params.index,
     )
     response = params.session.post(
