@@ -25,6 +25,7 @@ Dumps documents from Elasticsearch. Writes documents to stdout, one json object 
 
     parser = argparse.ArgumentParser(description="Elasticsearch data dumper (%s)" % (__version__, ), epilog=epilog)
     parser.add_argument('--verbose', '-v', action='count', default=0, help="try -v, -vv, -vvv; (-vv)")
+    parser.add_argument('--schema', type=str, choices=['http', 'https'], default='http', help="(%(default)s)")
     parser.add_argument('--host', type=str, action='store', default='127.0.0.1', help="es host; (%(default)s)")
     parser.add_argument('--port', type=int, action='store', default=9200, help="es port; (%(default)s)")
     parser.add_argument('--page-size', metavar='N', type=int, action='store', default=1000, help="results per page per shard; (%(default)s)")

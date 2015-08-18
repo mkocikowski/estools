@@ -16,3 +16,5 @@ def set_up_logging(verbosity=0, level=logging.WARNING):
 
     logging.getLogger("requests").setLevel(logging.ERROR)
 
+    logging.captureWarnings(True)
+    logging.getLogger("py.warnings").propagate = False

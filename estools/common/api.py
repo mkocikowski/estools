@@ -38,19 +38,20 @@ def request(ignore_codes=None):
 @request(ignore_codes=(404,))
 def delete_index(params=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s" % vars(params)
-    response = params.session.delete(url=url, stream=False)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s" % vars(params)
+    response = params.session.delete(url=url, stream=False, verify=False)
     return url, response
 
 
 @request(ignore_codes=(400,))
 def create_index(params=None, settings=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s" % vars(params)
     response = params.session.put(
         url=url,
         data=settings,
-        headers={'content-type': 'application/json'}
+        headers={'content-type': 'application/json'},
+        verify=False,
     )
     return url, response
 
@@ -58,12 +59,13 @@ def create_index(params=None, settings=None):
 @request()
 def index_bulk(params=None, data=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_bulk" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s/%(type)s/_bulk" % vars(params)
     response = params.session.post(
         url=url,
         data=data,
         stream=False,
-        headers={'content-type': 'application/json'}
+        headers={'content-type': 'application/json'},
+        verify=False,
     )
     return url, response
 
@@ -71,12 +73,13 @@ def index_bulk(params=None, data=None):
 @request()
 def put_mapping(params=None, mapping=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_mapping" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s/%(type)s/_mapping" % vars(params)
     response = params.session.put(
         url=url,
         data=mapping,
         stream=False,
         headers={'content-type': 'application/json'},
+        verify=False,
     )
     return url, response
 
@@ -84,9 +87,9 @@ def put_mapping(params=None, mapping=None):
 @request(ignore_codes=(404,))
 def close_index(params=None):
 
-    url = "http://%(host)s:%(port)i/%(alias)s/_close" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/%(alias)s/_close" % vars(params)
     LOGGER.info("closing index with alias: %s", params.alias)
-    response = params.session.post(url=url)
+    response = params.session.post(url=url, verify=False)
     return url, response
 
 
@@ -97,7 +100,7 @@ def set_alias(params=None):
         {"remove": {"index": "*", "alias": params.alias}},
         {"add": {"index": params.index, "alias": params.alias}},
     ]}
-    url = "http://%(host)s:%(port)i/_aliases" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/_aliases" % vars(params)
     LOGGER.info(
         "removing alias '%s' from all indexes and setting it to index '%s'",
         params.alias,
@@ -108,6 +111,7 @@ def set_alias(params=None):
         data=json.dumps(data),
         stream=False,
         headers={'content-type': 'application/json'},
+        verify=False,
     )
     return url, response
 
@@ -116,12 +120,13 @@ def set_alias(params=None):
 def update_setting(params=None, key=None, value=None):
 
     query = json.dumps({"index": {key: value}})
-    url = "http://%(host)s:%(port)i/%(index)s/_settings" % vars(params)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s/_settings" % vars(params)
     LOGGER.debug("updating index settings: %s %s", url, query)
     response = params.session.put(
         url=url,
         data=query,
         headers={'content-type': 'application/json'},
+        verify=False,
     )
     return url, response
 
@@ -131,8 +136,8 @@ def update_setting(params=None, key=None, value=None):
 #
 #     LOGGER.info("optimizing index to: %i segments", max_num_segments)
 #     locals().update(params._asdict())
-#     url = "http://%(host)s:%(port)i/%(index)s/_optimize?max_num_segments=%(max_num_segments)i" % locals()
-#     response = params.session.post(url)
+#     url = "%(schema)s://%(host)s:%(port)i/%(index)s/_optimize?max_num_segments=%(max_num_segments)i" % locals()
+#     response = params.session.post(url, verify=False)
 #     return url, response
 #
 
@@ -140,16 +145,16 @@ def update_setting(params=None, key=None, value=None):
 @request()
 def _scan_query(params=None, query=None):
 
-    url = "http://%(host)s:%(port)i/%(index)s/%(type)s/_search?search_type=scan&scroll=1m&size=%(page_size)i" % vars(params)
-    response = params.session.get(url=url, data=query, stream=False)
+    url = "%(schema)s://%(host)s:%(port)i/%(index)s/%(type)s/_search?search_type=scan&scroll=1m&size=%(page_size)i" % vars(params)
+    response = params.session.get(url=url, data=query, stream=False, verify=False)
     return url, response
 
 
 @request()
 def _scan_scroll(params=None, scroll_id=None):
 
-    url = "http://%(host)s:%(port)i/_search/scroll?scroll=1m" % vars(params)
-    response = params.session.get(url=url, data=scroll_id, stream=False)
+    url = "%(schema)s://%(host)s:%(port)i/_search/scroll?scroll=1m" % vars(params)
+    response = params.session.get(url=url, data=scroll_id, stream=False, verify=False)
     return url, response
 
 
