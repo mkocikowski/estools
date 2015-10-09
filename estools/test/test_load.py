@@ -156,6 +156,35 @@ class FunctionalTest(unittest.TestCase):
             self.assertEqual(error_count, test[3])
 
 
+    def test_abort(self):
+        # issue #22: on abort don't close old index or alias new one
+
+        try:
+            params = load.args_parser().parse_args("estools-test doc --wipe --alias=estools-test-alias".split())
+            docs = ['{"foo": 1}', '{"foo": 2}']
+            aliased = {"executed": False}
+
+            def set_alias(params=None):
+                aliased['executed'] = True
+            _tmp_set_alias = load.api.set_alias
+            load.api.set_alias = set_alias
+
+            load.run(params=params, session=self.session, input_i=docs)
+            self.assertTrue(aliased['executed'])
+
+            def index(params=None, records=None):
+                raise KeyboardInterrupt("simulating user interrupt")
+            _tmp_index = load.index
+            load.index = index
+            aliased['executed'] = False
+            self.assertRaises(KeyboardInterrupt, load.run, params=params, session=self.session, input_i=docs)
+            self.assertFalse(aliased['executed'])
+
+        finally:
+            load.api.set_alias = _tmp_set_alias
+            load.index = _tmp_index
+
+
 if __name__ == "__main__":
 
     log.set_up_logging(level=logging.DEBUG)

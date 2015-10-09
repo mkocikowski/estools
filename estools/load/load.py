@@ -201,14 +201,15 @@ def run(params=None, session=None, input_i=None):
             doc_count += dc
             error_count += ec
 
+        if params.alias:
+            api.close_index(params=params) # async closes index with specified alias
+            api.set_alias(params=params)
+
         return doc_count, error_count
 
     finally:
         api.update_setting(params=params, key="store.throttle.type", value="merge")
         api.update_setting(params=params, key="refresh_interval", value="1s")
-        if params.alias:
-            api.close_index(params=params) # async closes index with specified alias
-            api.set_alias(params=params)
 
 
 def args_parser():
@@ -220,7 +221,7 @@ document per line.
 
     parser = argparse.ArgumentParser(description="Elasticsearch data loader (%s)" % (__version__, ), epilog=epilog)
     parser.add_argument('--verbose', '-v', action='count', default=0, help="try -v, -vv, -vvv; (-vv)")
-    parser.add_argument('--schema', type=str, choices=['http', 'https'], default='http', help="(%(default)s)")
+    parser.add_argument('--schema', type=str, choices=['http', 'https'], default='http')
     parser.add_argument('--host', type=str, action='store', default='127.0.0.1', help="es host; (%(default)s)")
     parser.add_argument('--port', type=int, action='store', default=9200, help="es port; (%(default)s)")
     parser.add_argument('--wipe', action='store_true', help="wipe the index before inserting data; (%(default)s)")
