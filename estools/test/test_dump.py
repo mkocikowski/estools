@@ -22,7 +22,7 @@ class FunctionalTest(test_load.FunctionalTest):
     def test_functional(self):
 
         tests = (
-            ("estools-test test", ['{"foo": 1}', '{"foo": 2}'],),
+            ("estools-test test --silent", ['{"foo": 1}', '{"foo": 2}'],),
         )
 
         for test in tests:

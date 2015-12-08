@@ -142,25 +142,26 @@ class FunctionalTest(unittest.TestCase):
     def test_functional(self):
 
         tests = (
-            ("estools-test doc --wipe --id-field=foo --shards=3", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
-            ("estools-test doc", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
-            ("estools-test doc --wipe --alias=estools-test-alias", ['{"foo": 1}', '{"foo": 2}'], 2, 0),
-            ("estools-test doc", ['{"foo": 1}', '{"foo": "bar"}'], 2, 0), # not counting errors
-            ("estools-test doc --count-errors", ['{"foo": 1}', '{"foo": "bar"}'], 2, 1),
+            ("estools-test doc --wipe --id-field=foo --shards=3 --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
+            ("estools-test doc --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
+            ("estools-test doc --wipe --alias=estools-test-alias --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
+            ("estools-test doc --silent", ['{"foo": 1}', '{"foo": "bar"}'], 2, 24, 0), # not counting errors
+            ("estools-test doc --count-errors --silent", ['{"foo": 1}', '{"foo": "bar"}'], 2, 24, 1),
         )
 
         for test in tests:
             params = load.args_parser().parse_args(test[0].split())
-            doc_count, error_count = load.run(params=params, session=self.session, input_i=test[1])
+            doc_count, size_b, error_count = load.run(params=params, session=self.session, input_i=test[1])
             self.assertEqual(doc_count, test[2])
-            self.assertEqual(error_count, test[3])
+            self.assertEqual(size_b, test[3])
+            self.assertEqual(error_count, test[4])
 
 
     def test_abort(self):
         # issue #22: on abort don't close old index or alias new one
 
         try:
-            params = load.args_parser().parse_args("estools-test doc --wipe --alias=estools-test-alias".split())
+            params = load.args_parser().parse_args("estools-test doc --wipe --alias=estools-test-alias --silent".split())
             docs = ['{"foo": 1}', '{"foo": 2}']
             aliased = {"executed": False}
 

@@ -7,7 +7,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def set_up_logging(verbosity=0, level=logging.WARNING):
+def set_up_logging(verbosity=0, silent=False, level=logging.WARNING):
+
+    if silent:
+        verbosity = 0
 
     logging.basicConfig(
         level=level-(verbosity*10),
