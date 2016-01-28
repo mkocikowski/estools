@@ -148,9 +148,9 @@ def put_mapping(params=None, mapping=None):
     if not mapping:
         mapping = {}
 
-    if params.id_field:
-        mapping['_id'] = {'path': params.id_field}
-        LOGGER.debug("set mapping's '_id' to: %s", mapping['_id'])
+#    if params.id_field:
+#        mapping['_id'] = {'path': params.id_field}
+#        LOGGER.debug("set mapping's '_id' to: %s", mapping['_id'])
 
     if mapping != {}:
         api.put_mapping(params=params, mapping=json.dumps(mapping))
@@ -195,7 +195,7 @@ def run(params=None, session=None, input_i=None):
             error_count += ec
 
         if params.alias:
-            api.close_index(params=params) # async closes index with specified alias
+            #api.close_index(params=params) # async closes index with specified alias
             api.set_alias(params=params)
 
         return doc_count, size_b, error_count
@@ -241,8 +241,8 @@ document per line.
             help="number of primary shards. -1 will use cluster defaults. Number of replicas is always set to 0 for duration of the load; (%(default)s)")
     parser.add_argument('--throttle', type=str, action='store', default=None,
             help="limit upload to SIZE / sec; this is not exact. SIZE can be '100kb', '1G', etc; default is unthrottled")
-    parser.add_argument('--id-field', type=str, action='store', default=None,
-            help="dot-separated path to the document field from which doc ids are to be taken; 'foo.bar' will result in: {'_id': {'path': 'foo.bar'}}")
+#    parser.add_argument('--id-field', type=str, action='store', default=None,
+#            help="dot-separated path to the document field from which doc ids are to be taken; 'foo.bar' will result in: {'_id': {'path': 'foo.bar'}}")
     parser.add_argument('--count-errors', action='store_true', help="count errors in batches; degrades speed; (%(default)s)")
     parser.add_argument('--mappings-path', metavar='PATH', type=str, action='store', default=None, help="path to mapping file; (%(default)s)")
     parser.add_argument('--settings-path', metavar='PATH', type=str, action='store', default=None, help="path to index settings file; (%(default)s)")

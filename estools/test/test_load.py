@@ -70,21 +70,21 @@ class LoadClientTest(unittest.TestCase):
                 None,
                 {},
             ),
-            (
-                "index1 doctype1 --id-field='foo.bar'",
-                None,
-                {'_id': {'path': "'foo.bar'"}},
-            ),
-            (
-                "index1 doctype1",
-                {'foo': 'bar'},
-                {'foo': 'bar'},
-            ),
-            (
-                "index1 doctype1 --id-field='foo.bar'",
-                {'foo': 'bar'},
-                {'foo': 'bar', '_id': {'path': "'foo.bar'"}},
-            ),
+#            (
+#                "index1 doctype1 --id-field='foo.bar'",
+#                None,
+#                {'_id': {'path': "'foo.bar'"}},
+#            ),
+#            (
+#                "index1 doctype1",
+#                {'foo': 'bar'},
+#                {'foo': 'bar'},
+#            ),
+#            (
+#                "index1 doctype1 --id-field='foo.bar'",
+#                {'foo': 'bar'},
+#                {'foo': 'bar', '_id': {'path': "'foo.bar'"}},
+#            ),
         )
 
         for test in tests:
@@ -142,7 +142,7 @@ class FunctionalTest(unittest.TestCase):
     def test_functional(self):
 
         tests = (
-            ("estools-test doc --wipe --id-field=foo --shards=3 --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
+            ("estools-test doc --wipe --shards=3 --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
             ("estools-test doc --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
             ("estools-test doc --wipe --alias=estools-test-alias --silent", ['{"foo": 1}', '{"foo": 2}'], 2, 20, 0),
             ("estools-test doc --silent", ['{"foo": 1}', '{"foo": "bar"}'], 2, 24, 0), # not counting errors
