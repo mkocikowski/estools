@@ -214,6 +214,7 @@ def run(params=None, session=None, input_i=None):
                 "doc_count": doc_count,
                 "size_b": size_b,
                 "time_s": int(time.time()-t1),
+                "index": params.index,
             }
             s = json.dumps(stats, sort_keys=True)
             LOGGER.info(s)
